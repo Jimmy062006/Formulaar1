@@ -279,7 +279,7 @@ namespace Formulaar1
                                     {
                                         Name = "DownloadedEpisodesScan",
                                         Path = torrent.SavePath,
-                                        ImportMode = CommandResource.ImportModeEnum.Move
+                                        ImportMode = CommandResource.ImportModeEnum.Auto
                                     };
 
                                     await _commandApi.ApiV3CommandPostAsync(commandResource);
