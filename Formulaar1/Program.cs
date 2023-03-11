@@ -16,10 +16,10 @@ namespace Formulaar1
     {
         private static SeriesApi? _seriesApi;
         private static EpisodeApi? _episodeApi;
-        private static SeasonPassApi? _seasonPassApi;
+        //private static SeasonPassApi? _seasonPassApi;
         private static ReleasePushApi? _releasePushApi;
-        private static QueueStatusApi? _queueStatusApi;
-        private static QueueDetailsApi? _queueDetailsApi;
+        //private static QueueStatusApi? _queueStatusApi;
+        //private static QueueDetailsApi? _queueDetailsApi;
         private static CommandApi? _commandApi;
         private static HistoryApi? _historyApi;
         private static HttpClient _httpClient = new();
@@ -30,7 +30,7 @@ namespace Formulaar1
 
         private static System.Timers.Timer _timer = new System.Timers.Timer();
 
-        private static string? BaseSonarPath,BaseqBitPath,SonarApiKey,qBitUsername,qBitPassword;
+        private static string? TorrentClient,BaseSonarPath,BaseqBitPath,SonarApiKey,qBitUsername, qBitPassword;
 
         private static bool running = false;
 
@@ -40,31 +40,58 @@ namespace Formulaar1
 
             IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
 
+            TorrentClient = config.GetValue<string>("TorrentClient");
             BaseSonarPath = config.GetValue<string>("APICredentials:BaseSonarPath");
-            BaseqBitPath = config.GetValue<string>("APICredentials:BaseqBitPath");
             SonarApiKey = config.GetValue<string>("APICredentials:SonarApiKey");
-            qBitUsername = config.GetValue<string>("APICredentials:qBitUsername");
-            qBitPassword = config.GetValue<string>("APICredentials:qBitPassword");
+            qBitUsername = config.GetValue<string>("APICredentials:qBittorrentClient:qBitUsername");
+            qBitPassword = config.GetValue<string>("APICredentials:qBittorrentClient:qBitPassword");
+            BaseqBitPath = config.GetValue<string>("APICredentials:qBittorrentClient:BasePath");
 
-            Configuration.Default.BasePath = BaseSonarPath;
-            Configuration.Default.ApiKey.Add("X-Api-Key", SonarApiKey);
-            Configuration.Default.UserAgent = "Formulaar1";
+            //Configuring Sonarr API
+            if (BaseSonarPath != null && SonarApiKey != null)
+            {
 
-            _seriesApi = new SeriesApi();
-            _seasonPassApi = new SeasonPassApi();
-            _episodeApi = new EpisodeApi();
-            _episodeApi = new EpisodeApi();
-            _releasePushApi = new ReleasePushApi();
-            _queueStatusApi = new QueueStatusApi();
-            _queueDetailsApi = new QueueDetailsApi();
-            _historyApi = new HistoryApi();
-            _commandApi = new CommandApi();
+                Configuration.Default.BasePath = BaseSonarPath;
+                Configuration.Default.ApiKey.Add("X-Api-Key", SonarApiKey);
+                Configuration.Default.UserAgent = "Formulaar1";
+                
+                _seriesApi = new SeriesApi();
+                //_seasonPassApi = new SeasonPassApi();
+                _episodeApi = new EpisodeApi();
+                _episodeApi = new EpisodeApi();
+                _releasePushApi = new ReleasePushApi();
+                //_queueStatusApi = new QueueStatusApi();
+                //_queueDetailsApi = new QueueDetailsApi();
+                _historyApi = new HistoryApi();
+                _commandApi = new CommandApi();
+            }
+            else
+            {
+                Console.WriteLine("Please check the Sonarr section is configured correctly in appsettings.json");
+            }
 
-            _qBittorrentClient = new QBittorrentClient(new Uri(BaseqBitPath));
+            //Attempt to confiugure download client API's.
+            try
+            {
+                if (TorrentClient == "qBittorrent" && qBitUsername != null && qBitPassword != null)
+                {
+                    Console.WriteLine($"Detected qBittorrent Client, attempting to login");
+                    _qBittorrentClient = new QBittorrentClient(new Uri(BaseqBitPath));
+                    _qBittorrentClient.LoginAsync(qBitUsername, qBitPassword).GetAwaiter().GetResult();
+                    var result = _qBittorrentClient.GetBuildInfoAsync().GetAwaiter().GetResult();
+                    Console.WriteLine($"Logged in to {result.QtVersion}");
+                }
+                else
+                {
+                    Console.WriteLine("Please check the qBittorrent section is configured correctly in appsettings.json");
+                }
+            } 
+            catch (QBittorrentClientRequestException ex) 
+            {
+                Console.WriteLine(ex.ToString());
+            }
 
-            _qBittorrentClient.LoginAsync(qBitUsername, qBitPassword).GetAwaiter().GetResult();
-
-            _timer.Interval = 1000;
+            _timer.Interval = 60000;
             _timer.Elapsed += _checkEvents;
             _timer.Enabled = true;
             _timer.AutoReset = true;
@@ -74,19 +101,6 @@ namespace Formulaar1
 
             _ = app.Use(async (context, next) =>
             {
-                Debug.WriteLine($"{context.Request.Path}");
-                // Do work that can write to the Response.
-                await next.Invoke();
-                // Do logging or other work that doesn't write to the Response.
-            });
-
-            _ = app.Use(async (context, next) =>
-            {
-
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                serializer.Converters.Add(new JavaScriptDateTimeConverter());
-                serializer.NullValueHandling = NullValueHandling.Ignore;
-
                 string pathAndQuery = context.Request.GetEncodedPathAndQuery();
 
                 const string apiEndpoint = "/api";
@@ -120,84 +134,89 @@ namespace Formulaar1
                     {
 
                         var tmpReleasePost = (await context.Request.ReadFromJsonAsync<POSTReleasePush>());
-                        _ = Enum.TryParse(char.ToUpper(tmpReleasePost.Protocol[0]) + tmpReleasePost.Protocol.Substring(1), out DownloadProtocol Protocol);
 
-                        var ReleasePost = new ReleaseResource
-                        {
-                            Title = tmpReleasePost.Title,
-                            DownloadUrl = tmpReleasePost.DownloadUrl,
-                            Protocol = Protocol,
-                            Indexer = tmpReleasePost.Indexer,
-                            PublishDate = tmpReleasePost.PublishDate,
-                            Size = tmpReleasePost.Size,
-                            SeriesTitle = tmpReleasePost.SeriesTitle,
-                        };
-
-                        try
+                        if (tmpReleasePost != null && tmpReleasePost.Protocol != null)
                         {
 
-                            var Series = await _seriesApi.ApiV3SeriesGetAsync(387219);
-                            if (ReleasePost != null && ReleasePost.Title != null)
+                            _ = Enum.TryParse(char.ToUpper(tmpReleasePost.Protocol[0]) + tmpReleasePost.Protocol.Substring(1), out DownloadProtocol Protocol);
+
+                            var ReleasePost = new ReleaseResource
                             {
-                                _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
-                                var Country = Countries.FirstOrDefault(x => ReleasePost.Title.Contains(x));
-                                var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))", RegexOptions.IgnoreCase).ToString();
-                                ShowType = ShowType.Replace("One", "1");
-                                ShowType = ShowType.Replace("Two", "2");
-                                ShowType = ShowType.Replace("Three", "3");
-                                ShowType = ShowType.Replace("one", "1");
-                                ShowType = ShowType.Replace("two", "2");
-                                ShowType = ShowType.Replace("three", "3");
+                                Title = tmpReleasePost.Title,
+                                DownloadUrl = tmpReleasePost.DownloadUrl,
+                                Protocol = Protocol,
+                                Indexer = tmpReleasePost.Indexer,
+                                PublishDate = tmpReleasePost.PublishDate,
+                                Size = tmpReleasePost.Size,
+                                SeriesTitle = tmpReleasePost.SeriesTitle,
+                            };
 
-                                if (Country != null)
+                            try
+                            {
+
+                                var Series = await _seriesApi.ApiV3SeriesGetAsync(387219);
+                                if (ReleasePost != null && ReleasePost.Title != null)
                                 {
-                                    var Episode = (await _episodeApi.ApiV3EpisodeGetAsync(Series[0].Id)).FirstOrDefault(x => x.SeasonNumber
-                                    == SeasonID && x.Title.Contains(Country) && x.Title.Contains(ShowType));
+                                    _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
+                                    var Country = Countries.FirstOrDefault(x => ReleasePost.Title.Contains(x));
+                                    var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))", RegexOptions.IgnoreCase).ToString();
+                                    ShowType = ShowType.Replace("One", "1");
+                                    ShowType = ShowType.Replace("Two", "2");
+                                    ShowType = ShowType.Replace("Three", "3");
+                                    ShowType = ShowType.Replace("one", "1");
+                                    ShowType = ShowType.Replace("two", "2");
+                                    ShowType = ShowType.Replace("three", "3");
 
-                                    if (Episode != null)
+                                    if (Country != null)
                                     {
+                                        var Episode = (await _episodeApi.ApiV3EpisodeGetAsync(Series[0].Id)).FirstOrDefault(x => x.SeasonNumber
+                                        == SeasonID && x.Title.Contains(Country) && x.Title.Contains(ShowType));
 
-                                        var Quality = Regex.Match(ReleasePost.Title, @"(1080P|1080P|720P|480P|240P)", RegexOptions.IgnoreCase);
-
-                                        var SeriesMap = await _seriesApi.ApiV3SeriesIdGetAsync(Episode.SeriesId);
-
-                                        if (SeriesMap != null)
+                                        if (Episode != null)
                                         {
-                                            if (SeriesMap.Title == "Formula 1")
-                                            {
-                                                var SceneMapping = new AlternateTitleResource() { Title= Episode.Title, SeasonNumber = Episode.SeasonNumber, SceneSeasonNumber = Episode.SceneSeasonNumber };
 
-                                                ReleasePost.SceneMapping = SceneMapping;
-                                                ReleasePost.TvdbId = SeriesMap.TvdbId;
-                                                ReleasePost.Title = $"{SeriesMap.Title} - S{Episode.SeasonNumber}E{string.Format("{0:00}", Episode.EpisodeNumber)} - {Episode.Title} {Quality}";
-                                                ReleasePost.SeriesId = SeriesMap.Id;
-                                                ReleasePost.SeasonNumber = Episode.SeasonNumber;
-                                                ReleasePost.EpisodeNumbers = new List<int?>() { Episode.EpisodeNumber };
+                                            var Quality = Regex.Match(ReleasePost.Title, @"(1080P|1080P|720P|480P|240P)", RegexOptions.IgnoreCase);
+
+                                            var SeriesMap = await _seriesApi.ApiV3SeriesIdGetAsync(Episode.SeriesId);
+
+                                            if (SeriesMap != null)
+                                            {
+                                                if (SeriesMap.Title == "Formula 1")
+                                                {
+                                                    var SceneMapping = new AlternateTitleResource() { Title = Episode.Title, SeasonNumber = Episode.SeasonNumber, SceneSeasonNumber = Episode.SceneSeasonNumber };
+
+                                                    ReleasePost.SceneMapping = SceneMapping;
+                                                    ReleasePost.TvdbId = SeriesMap.TvdbId;
+                                                    ReleasePost.Title = $"{SeriesMap.Title} - S{Episode.SeasonNumber}E{string.Format("{0:00}", Episode.EpisodeNumber)} - {Episode.Title} {Quality}";
+                                                    ReleasePost.SeriesId = SeriesMap.Id;
+                                                    ReleasePost.SeasonNumber = Episode.SeasonNumber;
+                                                    ReleasePost.EpisodeNumbers = new List<int?>() { Episode.EpisodeNumber };
+                                                }
                                             }
                                         }
                                     }
                                 }
                             }
-                        }
-                        catch (Exception Ex)
-                        { }
+                            catch (Exception Ex)
+                            { }
 
-                        var response = await _releasePushApi.ApiV3ReleasePushPostAsync(ReleasePost);
+                            var response = await _releasePushApi.ApiV3ReleasePushPostAsync(ReleasePost);
 
-                        if (response != null)
-                        {
-                            foreach (var r in response)
+                            if (response != null)
                             {
-                                if (r.Rejected == false)
+                                foreach (var r in response)
                                 {
-                                    _hashes.Add(r);
+                                    if (r.Rejected == false)
+                                    {
+                                        _hashes.Add(r);
+                                    }
                                 }
                             }
+
+                            var result = response;
+
+                            await context.Response.WriteAsJsonAsync(result);
                         }
-
-                        var result = response;
-
-                        await context.Response.WriteAsJsonAsync(result);
                     }
                 }
             });
@@ -213,8 +232,9 @@ namespace Formulaar1
             {
                 running = true;
                 ////
-                ///Used to monitor qBit and then Hardlink lies once the download is complete 
-                ///and will also trigger a media import from the torrent folder.
+                ///Used to monitor qBit and then Hardlink once the download is complete 
+                ///and will also trigger a media import og the torrent folder in Sonarr.
+                ////
                 ///
 
                 foreach (var r in _hashes.ToList())
@@ -256,19 +276,6 @@ namespace Formulaar1
                                         var ofInfo = new FileInfo(file);
                                         var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
 
-                                        //Console.WriteLine(ofInfo.FullName);
-                                        //Console.WriteLine(nfInfo.FullName);
-
-
-
-                                        //ProcessStartInfo _process = new ProcessStartInfo()
-                                        //{
-                                        //    FileName = "ln",
-                                        //    Arguments = $"\"{ofInfo}\" \"{nfInfo}\""
-                                        //};
-
-                                        //Process.Start(_process);
-
                                         if (!File.Exists(nfInfo.ToString()))
                                         {
                                             int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
@@ -286,18 +293,6 @@ namespace Formulaar1
 
                                     _hashes.Remove(r);
 
-
-                                    //
-                                    //TO DO: Store PUSH and monitor for Torrent completion, Once complete push the manualfolderscan
-                                    //
-                                    //"path": "/home/(removed)/torrents/qbittorrent/tv-sonarr/Formula.1.2023.Round.01.BahrainGP.Practice.2.F1.Live.1080p.SS",
-                                    //"importMode": "auto",
-                                    //"sendUpdatesToClient": true,
-                                    //"updateScheduledTask": true,
-                                    //"completionMessage": "Completed",
-                                    //"requiresDiskAccess": false,
-                                    //"isExclusive": false,
-                                    //"name": "DownloadedEpisodesScan",
                                 }
                             }
                         }
