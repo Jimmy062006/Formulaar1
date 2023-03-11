@@ -40,11 +40,11 @@ namespace Formulaar1
 
             IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
 
+            SonarApiKey = config.GetValue<string>("APICredentials:Sonarr:ApiKey");
+            BaseSonarPath = config.GetValue<string>("APICredentials:Sonarr:BasePath");
             TorrentClient = config.GetValue<string>("TorrentClient");
-            BaseSonarPath = config.GetValue<string>("APICredentials:BaseSonarPath");
-            SonarApiKey = config.GetValue<string>("APICredentials:SonarApiKey");
-            qBitUsername = config.GetValue<string>("APICredentials:qBittorrentClient:qBitUsername");
-            qBitPassword = config.GetValue<string>("APICredentials:qBittorrentClient:qBitPassword");
+            qBitUsername = config.GetValue<string>("APICredentials:qBittorrentClient:Username");
+            qBitPassword = config.GetValue<string>("APICredentials:qBittorrentClient:Password");
             BaseqBitPath = config.GetValue<string>("APICredentials:qBittorrentClient:BasePath");
 
             //Configuring Sonarr API
@@ -67,7 +67,10 @@ namespace Formulaar1
             }
             else
             {
-                Console.WriteLine("Please check the Sonarr section is configured correctly in appsettings.json");
+                Console.WriteLine("#####################################################################################");
+                Console.WriteLine("## !!Please check the Sonarr section is configured correctly in appsettings.json!! ##");
+                Console.WriteLine("#####################################################################################");
+
             }
 
             //Attempt to confiugure download client API's.
@@ -78,12 +81,15 @@ namespace Formulaar1
                     Console.WriteLine($"Detected qBittorrent Client, attempting to login");
                     _qBittorrentClient = new QBittorrentClient(new Uri(BaseqBitPath));
                     _qBittorrentClient.LoginAsync(qBitUsername, qBitPassword).GetAwaiter().GetResult();
-                    var result = _qBittorrentClient.GetBuildInfoAsync().GetAwaiter().GetResult();
-                    Console.WriteLine($"Logged in to {result.QtVersion}");
+                    var result = _qBittorrentClient.GetQBittorrentVersionAsync().GetAwaiter().GetResult();
+                    Console.WriteLine($"Logged in to {result}");
                 }
                 else
                 {
-                    Console.WriteLine("Please check the qBittorrent section is configured correctly in appsettings.json");
+                    Console.WriteLine("###########################################################################################");
+                    Console.WriteLine("##  !!Please check the qBittorrent section is configured correctly in appsettings.json!! ##");
+                    Console.WriteLine("###########################################################################################");
+
                 }
             } 
             catch (QBittorrentClientRequestException ex) 
