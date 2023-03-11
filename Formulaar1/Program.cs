@@ -299,7 +299,7 @@ namespace Formulaar1
 
                                     await _commandApi.ApiV3CommandPostAsync(commandResource);
 
-                                    Console.WriteLine($"Sending Command:{commandResource.CommandName} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
+                                    Console.WriteLine($"Sending Command:{commandResource.Name} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
 
                                     _hashes.Remove(r);
                                 }
