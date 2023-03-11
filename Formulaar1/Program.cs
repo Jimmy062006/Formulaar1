@@ -7,6 +7,7 @@ using APIv3SonarrDotcore.Client;
 using APIv3SonarrDotcore.Model;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Runtime.InteropServices;
 using static Formulaar1.Helpers;
 
 namespace Formulaar1
@@ -204,6 +205,8 @@ namespace Formulaar1
             app.Run();
         }
 
+        [DllImport("libc")]
+        static extern int link(string oldpath, string newpath);
         private static async void _checkEvents(object? sender, System.Timers.ElapsedEventArgs e)
         {
             if (!running)
@@ -247,35 +250,39 @@ namespace Formulaar1
                                 {
                                     var files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
 
-
                                     //Attempt to Symlink files.
                                     foreach (var file in files)
                                     {
                                         var ofInfo = new FileInfo(file);
                                         var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
 
-                                        Console.WriteLine(ofInfo.FullName);
-                                        Console.WriteLine(nfInfo.FullName);
+                                        //Console.WriteLine(ofInfo.FullName);
+                                        //Console.WriteLine(nfInfo.FullName);
 
 
 
-                                        ProcessStartInfo _process = new ProcessStartInfo()
+                                        //ProcessStartInfo _process = new ProcessStartInfo()
+                                        //{
+                                        //    FileName = "ln",
+                                        //    Arguments = $"\"{ofInfo}\" \"{nfInfo}\""
+                                        //};
+
+                                        //Process.Start(_process);
+
+                                        if (!File.Exists(nfInfo.ToString()))
                                         {
-                                            FileName = "ln",
-                                            Arguments = $"\"{ofInfo}\" \"{nfInfo}\""
-                                        };
-
-                                        Process.Start(_process);
-
-                                        var commandResource = new CommandResource
-                                        {
-                                            Name = "DownloadedEpisodesScan",
-                                            Path = ofInfo.DirectoryName,
-                                            ImportMode = CommandResource.ImportModeEnum.Copy
-                                        };
-
-                                        await _commandApi.ApiV3CommandPostAsync(commandResource);
+                                            int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                        }
                                     }
+
+                                    var commandResource = new CommandResource
+                                    {
+                                        Name = "DownloadedEpisodesScan",
+                                        Path = torrent.SavePath,
+                                        ImportMode = CommandResource.ImportModeEnum.Move
+                                    };
+
+                                    await _commandApi.ApiV3CommandPostAsync(commandResource);
 
                                     _hashes.Remove(r);
 
