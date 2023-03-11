@@ -249,12 +249,11 @@ namespace Formulaar1
                     {
                         var history = await _historyApi.ApiV3HistoryGetAsync(null, true);
 
-                        var TenMins = new System.TimeSpan(0, 10, 0);
-
                         foreach (var h in history.Records.Where(x => x.SourceTitle == r.Title && x.Date < DateTime.Now.AddMinutes(-1)))
                         {
                             if (h.EventType == EpisodeHistoryEventType.Grabbed)
                             {
+                                Console.WriteLine($"Added Grabbed Torrent from Sonarr history {h.DownloadId}");
                                 r.InfoHash = h.DownloadId.ToLower();
                             }
                         }
@@ -276,7 +275,7 @@ namespace Formulaar1
                                 {
                                     var files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
 
-                                    //Attempt to Symlink files.
+                                    //Attempt to Hardlink files.
                                     foreach (var file in files)
                                     {
                                         var ofInfo = new FileInfo(file);
@@ -284,6 +283,7 @@ namespace Formulaar1
 
                                         if (!File.Exists(nfInfo.ToString()))
                                         {
+                                            Console.WriteLine($"Hard Linking {ofInfo} to {nfInfo}");
                                             int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                         }
                                     }
@@ -297,8 +297,9 @@ namespace Formulaar1
 
                                     await _commandApi.ApiV3CommandPostAsync(commandResource);
 
-                                    _hashes.Remove(r);
+                                    Console.WriteLine($"Sending Command:{commandResource.CommandName} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
 
+                                    _hashes.Remove(r);
                                 }
                             }
                         }
