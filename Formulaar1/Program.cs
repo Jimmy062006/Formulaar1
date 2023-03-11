@@ -92,7 +92,7 @@ namespace Formulaar1
 
                 }
             } 
-            catch (QBittorrentClientRequestException ex) 
+            catch (Exception ex) 
             {
                 Console.WriteLine(ex.ToString());
             }
@@ -220,6 +220,8 @@ namespace Formulaar1
                             }
 
                             var result = response;
+
+                            Console.WriteLine($"Pushing to Sonarr: {ReleasePost.Title}");
 
                             await context.Response.WriteAsJsonAsync(result);
                         }
