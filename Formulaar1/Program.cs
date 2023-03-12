@@ -117,7 +117,6 @@ namespace Formulaar1
                 }
                 else
                 {
-
                     if (!_httpClient.DefaultRequestHeaders.Contains("X-Api-Key"))
                     {
                         _httpClient.DefaultRequestHeaders.Accept.Clear();
@@ -140,6 +139,8 @@ namespace Formulaar1
                     {
 
                         var tmpReleasePost = (await context.Request.ReadFromJsonAsync<POSTReleasePush>());
+
+                        Console.WriteLine($"Processing {tmpReleasePost.SeriesTitle}");
 
                         if (tmpReleasePost != null && tmpReleasePost.Protocol != null)
                         {
