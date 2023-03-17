@@ -1,19 +1,21 @@
-using Microsoft.AspNetCore.Http.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using QBittorrent.Client;
 using APIv3SonarrDotcore.Api;
 using APIv3SonarrDotcore.Client;
 using APIv3SonarrDotcore.Model;
-using System.Diagnostics;
-using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http.Extensions;
+using QBittorrent.Client;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using Bugsnag.AspNet.Core;
 using static Formulaar1.Helpers;
+using Bugsnag;
+using Configuration = APIv3SonarrDotcore.Client.Configuration;
 
 namespace Formulaar1
 {
     public class Program
     {
+        private static Bugsnag.IClient _bugsnag;
+
         private static SeriesApi? _seriesApi;
         private static EpisodeApi? _episodeApi;
         //private static SeasonPassApi? _seasonPassApi;
@@ -30,15 +32,16 @@ namespace Formulaar1
 
         private static System.Timers.Timer _timer = new System.Timers.Timer();
 
-        private static string? TorrentClient,BaseSonarPath,BaseqBitPath,SonarApiKey,qBitUsername, qBitPassword;
+        private static string? TorrentClient,BaseSonarPath,BaseqBitPath,SonarApiKey,qBitUsername, qBitPassword,bugsnagApiKey;
 
         private static bool running = false;
+        private static bool bugsnagEnable = true;
 
         public static void Main(string[] args)
         {
             using IHost host = Host.CreateDefaultBuilder(args).Build();
 
-            IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
+            Microsoft.Extensions.Configuration.IConfiguration config = host.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
 
             SonarApiKey = config.GetValue<string>("APICredentials:Sonarr:ApiKey");
             BaseSonarPath = config.GetValue<string>("APICredentials:Sonarr:BasePath");
@@ -46,6 +49,14 @@ namespace Formulaar1
             qBitUsername = config.GetValue<string>("APICredentials:qBittorrentClient:Username");
             qBitPassword = config.GetValue<string>("APICredentials:qBittorrentClient:Password");
             BaseqBitPath = config.GetValue<string>("APICredentials:qBittorrentClient:BasePath");
+            bugsnagEnable = config.GetValue<bool>("APICredentials:bugsnag:enabled");
+            bugsnagApiKey = config.GetValue<string>("APICredentials:bugsnag:apiKey");
+
+            if (bugsnagEnable)
+            {
+                _bugsnag = new Bugsnag.Client(bugsnagApiKey);
+            }
+
 
             //Configuring Sonarr API
             if (BaseSonarPath != null && SonarApiKey != null)
@@ -95,6 +106,10 @@ namespace Formulaar1
             catch (Exception ex) 
             {
                 Console.WriteLine(ex.ToString());
+                if (bugsnagEnable)
+                {
+                    _bugsnag.Notify(ex);
+                }
             }
 
             _timer.Interval = 60000;
@@ -210,6 +225,10 @@ namespace Formulaar1
                             catch (Exception ex)
                             {
                                 Console.WriteLine(ex.ToString());
+                                if (bugsnagEnable)
+                                {
+                                    _bugsnag.Notify(ex);
+                                }
                             }
 
 
@@ -238,6 +257,10 @@ namespace Formulaar1
                             catch (Exception ex)
                             {
                                 Console.WriteLine(ex.ToString());
+                                if (bugsnagEnable)
+                                {
+                                    _bugsnag.Notify(ex);
+                                }
                             }
                         }
                     }
@@ -322,13 +345,18 @@ namespace Formulaar1
                             }
                         }
                         catch (Exception ex)
-                        { 
+                        {
                             Console.WriteLine(ex.ToString());
+                            if (bugsnagEnable)
+                            {
+                                _bugsnag.Notify(ex);
+                            }
                         }
                     }
                 }
                 running = false;
             }
         }
+
     }
 }
