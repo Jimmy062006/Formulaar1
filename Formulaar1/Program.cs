@@ -138,7 +138,7 @@ namespace Formulaar1
                     else if (context.Request.Method == "POST")
                     {
 
-                        var tmpReleasePost = (await context.Request.ReadFromJsonAsync<POSTReleasePush>());
+                        var tmpReleasePost = await context.Request.ReadFromJsonAsync<POSTReleasePush>();
 
                         Console.WriteLine($"Processing {tmpReleasePost.SeriesTitle}");
 
@@ -165,7 +165,7 @@ namespace Formulaar1
                                 if (ReleasePost != null && ReleasePost.Title != null)
                                 {
                                     _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
-                                    var Country = Countries.FirstOrDefault(x => ReleasePost.Title.Contains(x));
+                                    var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
                                     var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))", RegexOptions.IgnoreCase).ToString();
                                     ShowType = ShowType.Replace("One", "1");
                                     ShowType = ShowType.Replace("Two", "2");
@@ -177,7 +177,10 @@ namespace Formulaar1
                                     if (Country != null)
                                     {
                                         var Episode = (await _episodeApi.ApiV3EpisodeGetAsync(Series[0].Id)).FirstOrDefault(x => x.SeasonNumber
-                                        == SeasonID && x.Title.Contains(Country) && x.Title.Contains(ShowType));
+                                        == SeasonID && x.Title.Contains(Country) && x.Title.Contains(ShowType) ||
+                                        x.SeasonNumber
+                                        == SeasonID && x.Title.Contains(Country.Trim(' ')) && x.Title.Contains(ShowType)
+                                        );
 
                                         if (Episode != null)
                                         {
@@ -204,27 +207,38 @@ namespace Formulaar1
                                     }
                                 }
                             }
-                            catch (Exception Ex)
-                            { }
-
-                            var response = await _releasePushApi.ApiV3ReleasePushPostAsync(ReleasePost);
-
-                            if (response != null)
+                            catch (Exception ex)
                             {
-                                foreach (var r in response)
-                                {
-                                    if (r.Rejected == false)
-                                    {
-                                        _hashes.Add(r);
-                                    }
-                                }
+                                Console.WriteLine(ex.ToString());
                             }
 
-                            var result = response;
 
-                            Console.WriteLine($"Pushing to Sonarr: {ReleasePost.Title}");
+                            try
+                            {
 
-                            await context.Response.WriteAsJsonAsync(result);
+                                var response = await _releasePushApi.ApiV3ReleasePushPostAsync(ReleasePost);
+
+                                if (response != null)
+                                {
+                                    foreach (var r in response)
+                                    {
+                                        if (r.Rejected == false)
+                                        {
+                                            _hashes.Add(r);
+                                        }
+                                    }
+                                }
+
+                                var result = response;
+
+                                Console.WriteLine($"Pushing to Sonarr: {ReleasePost.Title}");
+
+                                await context.Response.WriteAsJsonAsync(result);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.ToString());
+                            }
                         }
                     }
                 }
@@ -264,47 +278,52 @@ namespace Formulaar1
 
                     if (r.InfoHash != null)
                     {
-
+                        try { 
                         var query = new TorrentListQuery() { Hashes = new string[] { r.InfoHash } };
                         var result = await _qBittorrentClient.GetTorrentListAsync(query);
 
-                        if (result.Count > 0)
-                        {
-                            var torrent = result.FirstOrDefault();
-                            if (torrent != null && torrent.CompletionOn != null)
+                            if (result.Count > 0)
                             {
-                                var sonarrItem = _hashes.Where(x => x.InfoHash == torrent.Hash).FirstOrDefault();
-                                if (sonarrItem != null)
+                                var torrent = result.FirstOrDefault();
+                                if (torrent != null && torrent.CompletionOn != null)
                                 {
-                                    var files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
-
-                                    //Attempt to Hardlink files.
-                                    foreach (var file in files)
+                                    var sonarrItem = _hashes.Where(x => x.InfoHash == torrent.Hash).FirstOrDefault();
+                                    if (sonarrItem != null)
                                     {
-                                        var ofInfo = new FileInfo(file);
-                                        var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
+                                        var files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
 
-                                        if (!File.Exists(nfInfo.ToString()))
+                                        //Attempt to Hardlink files.
+                                        foreach (var file in files)
                                         {
-                                            Console.WriteLine($"Hard Linking {ofInfo} to {nfInfo}");
-                                            int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                            var ofInfo = new FileInfo(file);
+                                            var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
+
+                                            if (!File.Exists(nfInfo.ToString()))
+                                            {
+                                                Console.WriteLine($"Hard Linking {ofInfo} to {nfInfo}");
+                                                int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                            }
                                         }
+
+                                        var commandResource = new CommandResource
+                                        {
+                                            Name = "DownloadedEpisodesScan",
+                                            Path = Path.Combine(torrent.SavePath, torrent.Name),
+                                            ImportMode = CommandResource.ImportModeEnum.Auto
+                                        };
+
+                                        await _commandApi.ApiV3CommandPostAsync(commandResource);
+
+                                        Console.WriteLine($"Sending Command:{commandResource.Name} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
+
+                                        _hashes.Remove(r);
                                     }
-
-                                    var commandResource = new CommandResource
-                                    {
-                                        Name = "DownloadedEpisodesScan",
-                                        Path = Path.Combine(torrent.SavePath, torrent.Name),
-                                        ImportMode = CommandResource.ImportModeEnum.Auto
-                                    };
-
-                                    await _commandApi.ApiV3CommandPostAsync(commandResource);
-
-                                    Console.WriteLine($"Sending Command:{commandResource.Name} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
-
-                                    _hashes.Remove(r);
                                 }
                             }
+                        }
+                        catch (Exception ex)
+                        { 
+                            Console.WriteLine(ex.ToString());
                         }
                     }
                 }
