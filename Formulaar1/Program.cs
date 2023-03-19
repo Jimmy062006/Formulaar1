@@ -9,6 +9,7 @@ using Bugsnag.AspNet.Core;
 using static Formulaar1.Helpers;
 using Bugsnag;
 using Configuration = APIv3SonarrDotcore.Client.Configuration;
+using System.Net;
 
 namespace Formulaar1
 {
@@ -35,7 +36,7 @@ namespace Formulaar1
         private static string? TorrentClient,BaseSonarPath,BaseqBitPath,SonarApiKey,qBitUsername, qBitPassword,bugsnagApiKey;
 
         private static bool running = false;
-        private static bool bugsnagEnable = true;
+        private static bool bugsnagEnabled = true;
 
         public static void Main(string[] args)
         {
@@ -49,10 +50,10 @@ namespace Formulaar1
             qBitUsername = config.GetValue<string>("APICredentials:qBittorrentClient:Username");
             qBitPassword = config.GetValue<string>("APICredentials:qBittorrentClient:Password");
             BaseqBitPath = config.GetValue<string>("APICredentials:qBittorrentClient:BasePath");
-            bugsnagEnable = config.GetValue<bool>("APICredentials:bugsnag:enabled");
+            bugsnagEnabled = config.GetValue<bool>("APICredentials:bugsnag:enabled");
             bugsnagApiKey = config.GetValue<string>("APICredentials:bugsnag:apiKey");
 
-            if (bugsnagEnable)
+            if (bugsnagEnabled)
             {
                 _bugsnag = new Bugsnag.Client(bugsnagApiKey);
             }
@@ -106,7 +107,7 @@ namespace Formulaar1
             catch (Exception ex) 
             {
                 Console.WriteLine(ex.ToString());
-                if (bugsnagEnable)
+                if (bugsnagEnabled)
                 {
                     _bugsnag.Notify(ex);
                 }
@@ -177,7 +178,7 @@ namespace Formulaar1
                             {
 
                                 var Series = await _seriesApi.ApiV3SeriesGetAsync(387219);
-                                if (ReleasePost != null && ReleasePost.Title != null)
+                                if (ReleasePost != null && ReleasePost.Title != null && (ReleasePost.Title.Contains("Formula 1") || ReleasePost.Title.Contains("Formula1")))
                                 {
                                     _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
                                     var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
@@ -225,7 +226,7 @@ namespace Formulaar1
                             catch (Exception ex)
                             {
                                 Console.WriteLine(ex.ToString());
-                                if (bugsnagEnable)
+                                if (bugsnagEnabled)
                                 {
                                     _bugsnag.Notify(ex);
                                 }
@@ -257,7 +258,7 @@ namespace Formulaar1
                             catch (Exception ex)
                             {
                                 Console.WriteLine(ex.ToString());
-                                if (bugsnagEnable)
+                                if (bugsnagEnabled)
                                 {
                                     _bugsnag.Notify(ex);
                                 }
@@ -323,7 +324,7 @@ namespace Formulaar1
 
                                             if (!File.Exists(nfInfo.ToString()))
                                             {
-                                                Console.WriteLine($"Hard Linking {ofInfo} to {nfInfo}");
+                                                Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
                                                 int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                             }
                                         }
@@ -346,8 +347,12 @@ namespace Formulaar1
                         }
                         catch (Exception ex)
                         {
+                            Console.WriteLine("Attempting Simple Reauth to torrent Client");
+
+                            await _qBittorrentClient.LoginAsync(qBitUsername, qBitPassword);
+
                             Console.WriteLine(ex.ToString());
-                            if (bugsnagEnable)
+                            if (bugsnagEnabled)
                             {
                                 _bugsnag.Notify(ex);
                             }
