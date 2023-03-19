@@ -15,7 +15,7 @@ namespace Formulaar1
 {
     public class Program
     {
-        private static Bugsnag.IClient _bugsnag;
+        private static Bugsnag.Client _bugsnag;
 
         private static SeriesApi? _seriesApi;
         private static EpisodeApi? _episodeApi;
