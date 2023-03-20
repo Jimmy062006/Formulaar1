@@ -190,6 +190,12 @@ namespace Formulaar1
                                     ShowType = ShowType.Replace("two", "2");
                                     ShowType = ShowType.Replace("three", "3");
 
+                                    if (ShowType == null)
+                                    {
+                                        //Lets assume its a Race
+                                        ShowType = "Race";
+                                    }
+
                                     if (Country != null)
                                     {
                                         var Episode = (await _episodeApi.ApiV3EpisodeGetAsync(Series[0].Id)).FirstOrDefault(x => x.SeasonNumber
