@@ -6,7 +6,7 @@ This is a small tool that I have written to attempt to automate Formula 1 Releas
 
 ```mermaid
 graph LR
-A[Brr] --> B{Formulaar1}
+A[AutoBrr] --> B{Formulaar1}
 B --> D[Sonarr]
 ```
 
@@ -37,7 +37,7 @@ Pre Built Binary.
 	  
 	You can then launch Formulaar1 to test it by typing `./Formulaar1`
 	  
-4. This can replace your original Sonarr client in Brr if you want. Please set this up so that it points to the port listed when you start Formulaar1
+4. This can replace your original Sonarr client in AutoBrr if you want. Please set this up so that it points to the port listed when you start Formulaar1
 
 ```
 info: Microsoft.Hosting.Lifetime[14]
@@ -48,7 +48,7 @@ info: Microsoft.Hosting.Lifetime[14]
 	  
 In this example we are going to use port 5000
 
-Create a new Client in Brr with the Type as Sonarr and host as http://127.0.0.1:5000 (from the above example) and with your normal Sonarr API key.
+Create a new Client in AutoBrr with the Type as Sonarr and host as http://127.0.0.1:5000 (from the above example) and with your normal Sonarr API key.
 
 Clicking test should give you the Green OK.
 
