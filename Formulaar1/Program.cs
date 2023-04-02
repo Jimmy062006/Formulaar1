@@ -355,7 +355,7 @@ namespace Formulaar1
                                         }
                                         else
                                         {
-                                            Directory.CreateDirectory(Path.Combine(torrent.SavePath, sonarrItem.Title, torrent.Name));
+                                            Directory.CreateDirectory(Path.Combine(torrent.SavePath, sonarrItem.Title));
                                             var file = Path.Combine(torrent.SavePath, torrent.Name);
 
                                             var ofInfo = new FileInfo(file);
@@ -363,11 +363,11 @@ namespace Formulaar1
 
                                             if (!File.Exists(nfInfo.ToString()))
                                             {
-                                                Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                Console.WriteLine($"Hard Linking File {ofInfo.Name} to {nfInfo.Name}");
                                                 int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                             }
 
-                                            var CommandPath = Path.Combine(torrent.SavePath, sonarrItem.Title, torrent.Name);
+                                            var CommandPath = Path.Combine(torrent.SavePath, sonarrItem.Title);
 
                                             var commandResource = new CommandResource
                                             {
