@@ -304,6 +304,7 @@ namespace Formulaar1
                                 r.InfoHash = h.DownloadId.ToLower();
                             }
                         }
+                        await Task.Delay(1000);
                     }
 
                     if (r.InfoHash != null)
@@ -321,51 +322,64 @@ namespace Formulaar1
                                     if (sonarrItem != null)
                                     {
                                         FileAttributes attr = File.GetAttributes(Path.Combine(torrent.SavePath, torrent.Name));
-                                        string[] files = null;
 
                                         if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
                                         {
-                                            files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
+                                            var files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
+
+                                            //Attempt to Hardlink files.
+                                            foreach (var file in files)
+                                            {
+                                                var ofInfo = new FileInfo(file);
+                                                var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
+
+                                                if (!File.Exists(nfInfo.ToString()))
+                                                {
+                                                    Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                    int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                                }
+                                            }
+
+                                            var CommandPath = Path.Combine(torrent.SavePath, torrent.Name);
+
+                                            var commandResource = new CommandResource
+                                            {
+                                                Name = "DownloadedEpisodesScan",
+                                                Path = CommandPath,
+                                                ImportMode = CommandResource.ImportModeEnum.Auto
+                                            };
+
+                                            await _commandApi.ApiV3CommandPostAsync(commandResource);
+
+                                            Console.WriteLine($"Sending Command:{commandResource.Name} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
                                         }
                                         else
                                         {
-                                            files = new string[] { Path.Combine(torrent.SavePath, torrent.Name) };
-                                        }
+                                            Directory.CreateDirectory(Path.Combine(torrent.SavePath, sonarrItem.Title, torrent.Name));
+                                            var file = Path.Combine(torrent.SavePath, torrent.Name);
 
-                                        //Attempt to Hardlink files.
-                                        foreach (var file in files)
-                                        {
                                             var ofInfo = new FileInfo(file);
-                                            var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
+                                            var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title}/{sonarrItem.Title} - {ofInfo.Name}");
 
                                             if (!File.Exists(nfInfo.ToString()))
                                             {
                                                 Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
                                                 int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                             }
+
+                                            var CommandPath = Path.Combine(torrent.SavePath, sonarrItem.Title, torrent.Name);
+
+                                            var commandResource = new CommandResource
+                                            {
+                                                Name = "DownloadedEpisodesScan",
+                                                Path = CommandPath,
+                                                ImportMode = CommandResource.ImportModeEnum.Auto
+                                            };
+
+                                            await _commandApi.ApiV3CommandPostAsync(commandResource);
+
+                                            Console.WriteLine($"Sending Command:{commandResource.Name} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
                                         }
-
-                                        var CommandPath = "";
-
-                                        if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
-                                        {
-                                            CommandPath = Path.Combine(torrent.SavePath, torrent.Name);
-                                        }
-                                        else
-                                        {
-                                            CommandPath = torrent.SavePath;
-                                        }
-
-                                        var commandResource = new CommandResource
-                                        {
-                                            Name = "DownloadedEpisodesScan",
-                                            Path = CommandPath,
-                                            ImportMode = CommandResource.ImportModeEnum.Auto
-                                        };
-
-                                        await _commandApi.ApiV3CommandPostAsync(commandResource);
-
-                                        Console.WriteLine($"Sending Command:{commandResource.Name} Mode:{commandResource.ImportMode} Torrent:{torrent.Name} for path \"{commandResource.Path}\"");
 
                                         _hashes.Remove(r);
                                     }
