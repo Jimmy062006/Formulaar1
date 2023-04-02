@@ -183,11 +183,7 @@ namespace Formulaar1
                                     _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
                                     var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
                                     var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))", RegexOptions.IgnoreCase).ToString();
-<<<<<<< HEAD
-
-=======
                                     Console.WriteLine($"ShowType: {ShowType}");
->>>>>>> df500a6b239d6a094aef58ea553ef3b02efbef07
                                     ShowType = ShowType.Replace("One", "1");
                                     ShowType = ShowType.Replace("Two", "2");
                                     ShowType = ShowType.Replace("Three", "3");
@@ -332,32 +328,12 @@ namespace Formulaar1
 
                                         if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
                                         {
-<<<<<<< HEAD
-                                            var targetDirectory = Path.Combine(torrent.SavePath, sonarrItem.Title);
-=======
->>>>>>> df500a6b239d6a094aef58ea553ef3b02efbef07
                                             var files = Directory.GetFiles(Path.Combine(torrent.SavePath, torrent.Name));
 
                                             //Attempt to Hardlink files.
                                             foreach (var file in files)
                                             {
                                                 var ofInfo = new FileInfo(file);
-<<<<<<< HEAD
-                                                var nfInfo = new FileInfo($"{targetDirectory}/{sonarrItem.Title} - {ofInfo.Name}");
-
-                                                if (!File.Exists(nfInfo.ToString()))
-                                                {
-                                                    Console.WriteLine($"Hard Linking File {ofInfo.Name} to {nfInfo.Name}");
-                                                    int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
-                                                    Console.WriteLine(linkResult);
-                                                }
-                                            }
-
-                                            var commandResource = new CommandResource
-                                            {
-                                                Name = "DownloadedEpisodesScan",
-                                                Path = targetDirectory,
-=======
                                                 var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
 
                                                 if (!File.Exists(nfInfo.ToString()))
@@ -367,13 +343,10 @@ namespace Formulaar1
                                                 }
                                             }
 
-                                            var CommandPath = Path.Combine(torrent.SavePath, torrent.Name);
-
                                             var commandResource = new CommandResource
                                             {
                                                 Name = "DownloadedEpisodesScan",
-                                                Path = CommandPath,
->>>>>>> df500a6b239d6a094aef58ea553ef3b02efbef07
+                                                Path = Path.Combine(torrent.SavePath, torrent.Name),
                                                 ImportMode = CommandResource.ImportModeEnum.Auto
                                             };
 
