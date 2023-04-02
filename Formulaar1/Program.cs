@@ -355,24 +355,24 @@ namespace Formulaar1
                                         }
                                         else
                                         {
-                                            Directory.CreateDirectory(Path.Combine(torrent.SavePath, sonarrItem.Title));
+                                            var targetDirectory = Path.Combine(torrent.SavePath, sonarrItem.Title);
+                                            Directory.CreateDirectory(targetDirectory);
                                             var file = Path.Combine(torrent.SavePath, torrent.Name);
 
                                             var ofInfo = new FileInfo(file);
-                                            var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title}/{sonarrItem.Title} - {ofInfo.Name}");
+                                            var nfInfo = new FileInfo($"{targetDirectory}/{sonarrItem.Title} - {ofInfo.Name}");
 
                                             if (!File.Exists(nfInfo.ToString()))
                                             {
                                                 Console.WriteLine($"Hard Linking File {ofInfo.Name} to {nfInfo.Name}");
                                                 int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                                Console.WriteLine(linkResult);
                                             }
-
-                                            var CommandPath = Path.Combine(torrent.SavePath, sonarrItem.Title);
 
                                             var commandResource = new CommandResource
                                             {
                                                 Name = "DownloadedEpisodesScan",
-                                                Path = CommandPath,
+                                                Path = targetDirectory,
                                                 ImportMode = CommandResource.ImportModeEnum.Auto
                                             };
 
