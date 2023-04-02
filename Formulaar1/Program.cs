@@ -329,7 +329,7 @@ namespace Formulaar1
                                         }
                                         else
                                         {
-                                            files = new string[] { $"{torrent.Name}" };
+                                            files = new string[] { Path.Combine(torrent.SavePath, torrent.Name) };
                                         }
 
                                         //Attempt to Hardlink files.
