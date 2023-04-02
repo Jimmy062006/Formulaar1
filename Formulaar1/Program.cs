@@ -320,7 +320,7 @@ namespace Formulaar1
                                     var sonarrItem = _hashes.Where(x => x.InfoHash == torrent.Hash).FirstOrDefault();
                                     if (sonarrItem != null)
                                     {
-                                        FileAttributes attr = File.GetAttributes(torrent.Name);
+                                        FileAttributes attr = File.GetAttributes(Path.Combine(torrent.SavePath, torrent.Name));
                                         string[] files = null;
 
                                         if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
