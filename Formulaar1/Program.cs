@@ -345,10 +345,21 @@ namespace Formulaar1
                                             }
                                         }
 
+                                        var CommandPath = "";
+
+                                        if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
+                                        {
+                                            CommandPath = Path.Combine(torrent.SavePath, torrent.Name);
+                                        }
+                                        else
+                                        {
+                                            CommandPath = torrent.SavePath;
+                                        }
+
                                         var commandResource = new CommandResource
                                         {
                                             Name = "DownloadedEpisodesScan",
-                                            Path = Path.Combine(torrent.SavePath, torrent.Name),
+                                            Path = CommandPath,
                                             ImportMode = CommandResource.ImportModeEnum.Auto
                                         };
 
