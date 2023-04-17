@@ -4,6 +4,8 @@
 
 This is a small tool that I have written to attempt to automate Formula 1 Release pushes to Sonarr.
 
+Currently this only works on Linux setups due toi hardlinking and no access for me to test on a Windows setup.
+
 ```mermaid
 graph LR
 A[AutoBrr] --> B{Formulaar1}
