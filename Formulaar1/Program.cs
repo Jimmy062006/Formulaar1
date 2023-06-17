@@ -190,7 +190,9 @@ namespace Formulaar1
                                 ShowType = ShowType.Replace("one", "1");
                                 ShowType = ShowType.Replace("two", "2");
                                 ShowType = ShowType.Replace("three", "3");
+                                ShowType = ShowType.Replace("FP2", "Practice 1");
                                 ShowType = ShowType.Replace("FP2", "Practice 2");
+                                ShowType = ShowType.Replace("FP2", "Practice 3");
 
                                     if (string.IsNullOrWhiteSpace(ShowType))
                                     {
