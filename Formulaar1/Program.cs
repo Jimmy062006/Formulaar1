@@ -1,15 +1,11 @@
 using APIv3SonarrDotcore.Api;
-using APIv3SonarrDotcore.Client;
 using APIv3SonarrDotcore.Model;
 using Microsoft.AspNetCore.Http.Extensions;
 using QBittorrent.Client;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using Bugsnag.AspNet.Core;
 using static Formulaar1.Helpers;
-using Bugsnag;
 using Configuration = APIv3SonarrDotcore.Client.Configuration;
-using System.Net;
 
 namespace Formulaar1
 {
@@ -123,76 +119,78 @@ namespace Formulaar1
 
             _ = app.Use(async (context, next) =>
             {
-            string pathAndQuery = context.Request.GetEncodedPathAndQuery();
+                string pathAndQuery = context.Request.GetEncodedPathAndQuery();
 
-            const string apiEndpoint = "/api";
-            if (!pathAndQuery.StartsWith(apiEndpoint))
-            {
-                //continues through the rest of the pipeline
-                await next();
-            }
-            else
-            {
-                if (!_httpClient.DefaultRequestHeaders.Contains("X-Api-Key"))
+                const string apiEndpoint = "/api";
+                if (!pathAndQuery.StartsWith(apiEndpoint))
                 {
-                    _httpClient.DefaultRequestHeaders.Accept.Clear();
-                    _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
-
-                    _httpClient.DefaultRequestHeaders.Add("User-Agent", "Formulaar1");
-                    _httpClient.DefaultRequestHeaders.Add("X-Api-Key", SonarApiKey);
+                    //continues through the rest of the pipeline
+                    await next();
                 }
-
-                if (context.Request.Method == "GET")
+                else
                 {
-                    HttpResponseMessage response = await _httpClient.GetAsync(BaseSonarPath + "/api" + pathAndQuery.Replace(apiEndpoint, ""));
+                    if (!_httpClient.DefaultRequestHeaders.Contains("X-Api-Key"))
+                    {
+                        _httpClient.DefaultRequestHeaders.Accept.Clear();
+                        _httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
 
-                    string result = await response.Content.ReadAsStringAsync();
+                        _httpClient.DefaultRequestHeaders.Add("User-Agent", "Formulaar1");
+                        _httpClient.DefaultRequestHeaders.Add("X-Api-Key", SonarApiKey);
+                    }
 
-                    context.Response.StatusCode = (int)response.StatusCode;
-                    await context.Response.WriteAsync(result);
-                }
-                else if (context.Request.Method == "POST")
-                {
+                    if (context.Request.Method == "GET")
+                    {
+                        HttpResponseMessage response = await _httpClient.GetAsync(BaseSonarPath + "/api" + pathAndQuery.Replace(apiEndpoint, ""));
 
-                    var tmpReleasePost = await context.Request.ReadFromJsonAsync<POSTReleasePush>();
+                        string result = await response.Content.ReadAsStringAsync();
 
-                    Console.WriteLine($"Processing {tmpReleasePost.SeriesTitle}");
-
-                    if (tmpReleasePost != null && tmpReleasePost.Protocol != null)
+                        context.Response.StatusCode = (int)response.StatusCode;
+                        await context.Response.WriteAsync(result);
+                    }
+                    else if (context.Request.Method == "POST")
                     {
 
-                        _ = Enum.TryParse(char.ToUpper(tmpReleasePost.Protocol[0]) + tmpReleasePost.Protocol.Substring(1), out DownloadProtocol Protocol);
+                        var tmpReleasePost = await context.Request.ReadFromJsonAsync<POSTReleasePush>();
 
-                        var ReleasePost = new ReleaseResource
-                        {
-                            Title = tmpReleasePost.Title,
-                            DownloadUrl = tmpReleasePost.DownloadUrl,
-                            Protocol = Protocol,
-                            Indexer = tmpReleasePost.Indexer,
-                            PublishDate = tmpReleasePost.PublishDate,
-                            Size = tmpReleasePost.Size,
-                            SeriesTitle = tmpReleasePost.SeriesTitle,
-                        };
+                        Console.WriteLine($"Processing {tmpReleasePost.SeriesTitle}");
 
-                        try
+                        if (tmpReleasePost != null && tmpReleasePost.Protocol != null)
                         {
 
-                            var Series = await _seriesApi.ApiV3SeriesGetAsync(387219);
-                            if (ReleasePost != null && ReleasePost.Title != null && (ReleasePost.Title.Contains("Formula 1") || ReleasePost.Title.Contains("Formula1")))
+                            _ = Enum.TryParse(char.ToUpper(tmpReleasePost.Protocol[0]) + tmpReleasePost.Protocol.Substring(1), out DownloadProtocol Protocol);
+
+                            var ReleasePost = new ReleaseResource
                             {
-                                _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
-                                var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
-                                var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint|Qually|Qualy)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))|((fp)([0-9]))", RegexOptions.IgnoreCase).ToString();
-                                Console.WriteLine($"ShowType: {ShowType}");
-                                ShowType = ShowType.Replace("One", "1");
-                                ShowType = ShowType.Replace("Two", "2");
-                                ShowType = ShowType.Replace("Three", "3");
-                                ShowType = ShowType.Replace("one", "1");
-                                ShowType = ShowType.Replace("two", "2");
-                                ShowType = ShowType.Replace("three", "3");
-                                ShowType = ShowType.Replace("FP1", "Practice 1");
-                                ShowType = ShowType.Replace("FP2", "Practice 2");
-                                ShowType = ShowType.Replace("FP3", "Practice 3");
+                                Title = tmpReleasePost.Title,
+                                DownloadUrl = tmpReleasePost.DownloadUrl,
+                                Protocol = Protocol,
+                                Indexer = tmpReleasePost.Indexer,
+                                PublishDate = tmpReleasePost.PublishDate,
+                                Size = tmpReleasePost.Size,
+                                SeriesTitle = tmpReleasePost.SeriesTitle,
+                            };
+
+                            try
+                            {
+
+                                var Series = await _seriesApi.ApiV3SeriesGetAsync(387219);
+                                if (ReleasePost != null && ReleasePost.Title != null && (ReleasePost.Title.Contains("Formula 1") || ReleasePost.Title.Contains("Formula1")))
+                                {
+                                    _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
+                                    var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
+                                    var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint|Qually|Qualy)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))|((fp)([0-9]))", RegexOptions.IgnoreCase).ToString();
+                                    Console.WriteLine($"ShowType: {ShowType}");
+                                    ShowType = ShowType.Replace("One", "1");
+                                    ShowType = ShowType.Replace("Two", "2");
+                                    ShowType = ShowType.Replace("Three", "3");
+                                    ShowType = ShowType.Replace("one", "1");
+                                    ShowType = ShowType.Replace("two", "2");
+                                    ShowType = ShowType.Replace("three", "3");
+                                    ShowType = ShowType.Replace("FP1", "Practice 1");
+                                    ShowType = ShowType.Replace("FP2", "Practice 2");
+                                    ShowType = ShowType.Replace("FP3", "Practice 3");
+                                    ShowType = ShowType.Replace("Qually", "Qualifying");
+                                    ShowType = ShowType.Replace("Qualy", "Qualifying");
 
                                     if (string.IsNullOrWhiteSpace(ShowType))
                                     {
