@@ -182,7 +182,7 @@ namespace Formulaar1
                             {
                                 _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
                                 var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
-                                var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint|Qually)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))|((fp)([0-9]))", RegexOptions.IgnoreCase).ToString();
+                                var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint|Qually|Qualy)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))|((fp)([0-9]))", RegexOptions.IgnoreCase).ToString();
                                 Console.WriteLine($"ShowType: {ShowType}");
                                 ShowType = ShowType.Replace("One", "1");
                                 ShowType = ShowType.Replace("Two", "2");
