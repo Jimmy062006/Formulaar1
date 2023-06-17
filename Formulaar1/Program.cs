@@ -182,7 +182,7 @@ namespace Formulaar1
                             {
                                 _ = int.TryParse(Regex.Match(ReleasePost.Title, @"(?:(?:18|19|20|21)[0-9]{2})").ToString(), out int SeasonID);
                                 var Country = Countries.FirstOrDefault(x => ReleasePost.Title.ToLower().Contains(x.Key.ToLower()) || ReleasePost.Title.ToLower().Contains(x.Key.ToLower())).Value;
-                                var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))", RegexOptions.IgnoreCase).ToString();
+                                var ShowType = Regex.Match(ReleasePost.Title, @"(Qualifying|Race|Sprint)|((Practice|Practise)((.One|.Two|.Three|[0-9]|.[0-9])|(One|Two|Three|[0-9]|.[0-9])))|((fp)([0-9]))", RegexOptions.IgnoreCase).ToString();
                                 Console.WriteLine($"ShowType: {ShowType}");
                                 ShowType = ShowType.Replace("One", "1");
                                 ShowType = ShowType.Replace("Two", "2");
@@ -190,14 +190,14 @@ namespace Formulaar1
                                 ShowType = ShowType.Replace("one", "1");
                                 ShowType = ShowType.Replace("two", "2");
                                 ShowType = ShowType.Replace("three", "3");
-                                ShowType = ShowType.Replace("FP2", "Practise 2");
+                                ShowType = ShowType.Replace("FP2", "Practice 2");
 
                                     if (string.IsNullOrWhiteSpace(ShowType))
                                     {
                                         //Lets assume its a Race
                                         ShowType = "Race";
+                                        Console.WriteLine($"**Override ShowType: {ShowType}");
                                     }
-                                    Console.WriteLine($"ShowType: {ShowType}");
 
                                     if (Country != null)
                                     {
