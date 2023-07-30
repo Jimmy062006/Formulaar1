@@ -30,7 +30,7 @@ namespace Formulaar1
 
         private static System.Timers.Timer _timer = new System.Timers.Timer();
 
-        private static string? TorrentClient, BaseSonarPath, BaseqBitPath, SonarApiKey, qBitUsername, qBitPassword, bugsnagApiKey;
+        private static string? TorrentClient, BaseSonarPath, BaseqBitPath, SonarApiKey, qBitUsername, qBitPassword, bugsnagApiKey, hardlinkpath;
 
         private static bool running = false;
         private static bool bugsnagEnabled = true;
@@ -39,7 +39,7 @@ namespace Formulaar1
         {
             using IHost host = Host.CreateDefaultBuilder(args).Build();
 
-            Microsoft.Extensions.Configuration.IConfiguration config = host.Services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>();
+            IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
 
             SonarApiKey = config.GetValue<string>("APICredentials:Sonarr:ApiKey");
             BaseSonarPath = config.GetValue<string>("APICredentials:Sonarr:BasePath");
@@ -49,6 +49,7 @@ namespace Formulaar1
             BaseqBitPath = config.GetValue<string>("APICredentials:qBittorrentClient:BasePath");
             bugsnagEnabled = config.GetValue<bool>("APICredentials:bugsnag:enabled");
             bugsnagApiKey = config.GetValue<string>("APICredentials:bugsnag:apiKey");
+            Hardlinkpath = config.GetValue<string>("Hardlinkpath");
 
             if (bugsnagEnabled)
             {
