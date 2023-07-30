@@ -402,7 +402,7 @@ namespace Formulaar1
                                             var commandResource = new CommandResource
                                             {
                                                 Name = "DownloadedEpisodesScan",
-                                                Path = Path.Combine(torrent.SavePath, torrent.Name),
+                                                Path = hardpathcomplete,
                                                 ImportMode = CommandResource.ImportModeEnum.Auto
                                             };
 
