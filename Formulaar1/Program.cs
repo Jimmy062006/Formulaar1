@@ -356,18 +356,21 @@ namespace Formulaar1
                                                     nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part1{ofInfo.Extension}");
 
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                    int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                                 }
                                                 else if (ofInfo.Name.ToLower().Contains("session"))
                                                 {
                                                     nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part2{ofInfo.Extension}");
 
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                    int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                                 }
                                                 else if (ofInfo.Name.ToLower().Contains("analysis"))
                                                 {
                                                     nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part3{ofInfo.Extension}");
 
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                    int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                                 }
                                                 else
                                                 {
