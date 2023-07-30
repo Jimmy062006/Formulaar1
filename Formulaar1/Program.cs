@@ -30,7 +30,7 @@ namespace Formulaar1
 
         private static System.Timers.Timer _timer = new System.Timers.Timer();
 
-        private static string? TorrentClient, BaseSonarPath, BaseqBitPath, SonarApiKey, qBitUsername, qBitPassword, bugsnagApiKey, hardlinkpath;
+        private static string? TorrentClient, BaseSonarPath, BaseqBitPath, SonarApiKey, qBitUsername, qBitPassword, bugsnagApiKey, Hardlinkpath;
 
         private static bool running = false;
         private static bool bugsnagEnabled = true;
@@ -56,6 +56,19 @@ namespace Formulaar1
                 _bugsnag = new Bugsnag.Client(bugsnagApiKey);
             }
 
+            //Setup Hardlinkpath
+            if (string.IsNullOrEmpty(Hardlinkpath))
+            {
+                Console.WriteLine("#####################################################################################");
+                Console.WriteLine("##    !!Please check Hardlinkpath is configured correctly in appsettings.json!!    ##");
+                Console.WriteLine("#####################################################################################");
+                Console.Read();
+            }
+
+            if (!Directory.Exists(Hardlinkpath))
+            {
+                Directory.CreateDirectory(Hardlinkpath);
+            }
 
             //Configuring Sonarr API
             if (BaseSonarPath != null && SonarApiKey != null)
@@ -341,6 +354,9 @@ namespace Formulaar1
                                     if (sonarrItem != null)
                                     {
                                         FileAttributes attr = File.GetAttributes(Path.Combine(torrent.SavePath, torrent.Name));
+                                        var hardpathcomplete = Path.Combine(Hardlinkpath, sonarrItem.Title);
+
+                                        Directory.CreateDirectory(hardpathcomplete);
 
                                         if ((attr & FileAttributes.Directory) == FileAttributes.Directory)
                                         {
@@ -350,25 +366,25 @@ namespace Formulaar1
                                             foreach (var file in files)
                                             {
                                                 var ofInfo = new FileInfo(file);
-                                                var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
+                                                var nfInfo = new FileInfo($"{hardpathcomplete}/{sonarrItem.Title} - {ofInfo.Name}");
 
                                                 if (ofInfo.Name.ToLower().Contains("buildup"))
                                                 {
-                                                    nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part1{ofInfo.Extension}");
+                                                    nfInfo = new FileInfo($"{hardpathcomplete}/{sonarrItem.Title} - Part1{ofInfo.Extension}");
 
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
                                                     int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                                 }
                                                 else if (ofInfo.Name.ToLower().Contains("session"))
                                                 {
-                                                    nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part2{ofInfo.Extension}");
+                                                    nfInfo = new FileInfo($"{hardpathcomplete}/{sonarrItem.Title} - Part2{ofInfo.Extension}");
 
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
                                                     int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
                                                 }
                                                 else if (ofInfo.Name.ToLower().Contains("analysis"))
                                                 {
-                                                    nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part3{ofInfo.Extension}");
+                                                    nfInfo = new FileInfo($"{hardpathcomplete}/{sonarrItem.Title} - Part3{ofInfo.Extension}");
 
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
                                                     int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
@@ -396,7 +412,7 @@ namespace Formulaar1
                                         }
                                         else
                                         {
-                                            var targetDirectory = Path.Combine(torrent.SavePath, sonarrItem.Title);
+                                            var targetDirectory = hardpathcomplete;
                                             Directory.CreateDirectory(targetDirectory);
                                             var file = Path.Combine(torrent.SavePath, torrent.Name);
 
