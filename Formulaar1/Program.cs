@@ -351,10 +351,31 @@ namespace Formulaar1
                                                 var ofInfo = new FileInfo(file);
                                                 var nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - {ofInfo.Name}");
 
-                                                if (!File.Exists(nfInfo.ToString()))
+                                                if (ofInfo.Name.ToLower().Contains("buildup"))
                                                 {
+                                                    nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part1{ofInfo.Extension}");
+
                                                     Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
-                                                    int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                                }
+                                                else if (ofInfo.Name.ToLower().Contains("session"))
+                                                {
+                                                    nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part2{ofInfo.Extension}");
+
+                                                    Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                }
+                                                else if (ofInfo.Name.ToLower().Contains("analysis"))
+                                                {
+                                                    nfInfo = new FileInfo($"{ofInfo.DirectoryName}/{sonarrItem.Title} - Part3{ofInfo.Extension}");
+
+                                                    Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                }
+                                                else
+                                                {
+                                                    if (!File.Exists(nfInfo.ToString()))
+                                                    {
+                                                        Console.WriteLine($"Hard Linking {ofInfo.Name} to {nfInfo.Name}");
+                                                        int linkResult = link(ofInfo.ToString(), nfInfo.ToString());
+                                                    }
                                                 }
                                             }
 
