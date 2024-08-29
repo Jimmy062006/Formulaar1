@@ -13,7 +13,7 @@
     <PackageReference Include="FubarCoder.RestSharp.Portable.HttpClient" Version="4.0.8" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="QBittorrent.Client" Version="1.8.23016.2" />
-    <PackageReference Include="RestSharp" Version="108.0.3" />
+    <PackageReference Include="RestSharp" Version="112.0.0" />
   </ItemGroup>
 
 </Project>
